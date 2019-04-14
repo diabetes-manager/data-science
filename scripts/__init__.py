@@ -1,5 +1,4 @@
 import re
-import xml.etree.cElementTree as ET
 from pathlib import Path
 
 import pandas as pd
@@ -73,17 +72,45 @@ def load_tidepool_dummy():
     return pd.read_csv(data_path)
 
 
-def load_so_pump():
+def load_so_pump_raw():
     data_path = str(DATA_DIR / 'private' / 'omnipod_pump' / 
-                    'omnipod_export_2019-04-13.XML')
-    tree = ET.parse(data_path)
-    root = tree.getroot()
-    
-    list_dicts = []
-    for record in root:
-        list_dicts.append(record[0].attrib)
-        
-    return pd.DataFrame(list_dicts)
+                    'omnipod_export_2019-04-13.TAB')
+    df = pd.read_csv(data_path, sep='\t', encoding='latin1')
+
+    cols = ['DATEEVENT', 'TIMESLOT', 'EVENTTYPE', 'VENDOR_EVENT_ID', 
+            'KEY0', 'KEY1', 'KEY2', 
+            'I0', 'I1', 'I2', 'I3', 'I4', 'I5', 'I6', 'I7', 'I8', 'I9', 
+            'D0', 'D1', 'D2', 'D3', 'D4', 
+            'C0', 'C1', 'C2', 'COMMENT']
+    df = df[cols]
+
+    df['DATEEVENT'] = pd.to_datetime(
+        pd.to_numeric(df['DATEEVENT']) - 2,
+        origin='1900-01-01', unit="D"
+    ).dt.round('s')
+
+    return df.sort_values('DATEEVENT').reset_index(drop=True)
+
+
+def load_so_pump_clean():
+    """Data pulled by copy & paste from Abbott desktop app"""
+    data_path = str(DATA_DIR / 'private' / 'omnipod_pump' / 
+                    'omnipod_export_2019-04-13.csv')
+    df = pd.read_csv(data_path)
+
+    df.loc[df['Time'].isna(), 'Time'] = '12:00 AM'
+    df['Datetime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
+    df = df.drop(columns=['Date', 'Time'])
+
+    df[['Value', 'Unit', '_']] = (df['Value'].str.replace(r'\(|\)', '')
+                                             .str.split(' ', expand=True))
+    df = df.drop(columns=['_'])
+    df['Value'] = pd.to_numeric(df['Value'])
+
+    cols = ['Datetime', 'Type', 'Value', 'Unit', 'Description', 
+            'Other Info', 'Comment']
+
+    return df[cols]
 
 
 def load_so_cgm():
@@ -103,4 +130,6 @@ def load_so_cgm():
             df = df.loc[~date_nans]
             dfs.append(df)
 
-    return pd.concat(dfs)
+    df = dfs.append(df)    
+
+    return df
