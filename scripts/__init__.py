@@ -1,14 +1,17 @@
-"""Load data from http://archive.ics.uci.edu/ml/datasets/diabetes"""
-from pathlib import Path
 import re
+import xml.etree.cElementTree as ET
+from pathlib import Path
 
 import pandas as pd
 # from dotenv import load_dotenv
 
 # load_dotenv()
 
+DATA_DIR = Path(__file__).parents[1] / 'data'
 
-def load_uci(data_path='data/public'):
+def load_uci():
+    """Load data from http://archive.ics.uci.edu/ml/datasets/diabetes"""
+    data_path = str(DATA_DIR / 'public' / 'uci')
     dfs = []
     for p in Path(data_path).iterdir():
         match = re.search(r'\d\d$', str(p))
@@ -63,8 +66,41 @@ def load_uci(data_path='data/public'):
 def load_tidepool_dummy():
     """Assumed fake data from https://github.com/tidepool-org
     Could be a useful data structure to emulate"""
-    df = pd.read_csv('https://raw.githubusercontent.com/tidepool-org/'
-                     'data-analytics/master/examples/example-data/'
-                     'example-from-j-jellyfish.csv')
+    data_path = ('https://raw.githubusercontent.com/tidepool-org/'
+                 'data-analytics/master/examples/example-data/'
+                 'example-from-j-jellyfish.csv')
 
-    return df
+    return pd.read_csv(data_path)
+
+
+def load_so_pump():
+    data_path = str(DATA_DIR / 'private' / 'omnipod_pump' / 
+                    'omnipod_export_2019-04-13.XML')
+    tree = ET.parse(data_path)
+    root = tree.getroot()
+    
+    list_dicts = []
+    for record in root:
+        list_dicts.append(record[0].attrib)
+        
+    return pd.DataFrame(list_dicts)
+
+
+def load_so_cgm():
+    data_path = str(DATA_DIR / 'private' / 'dexcom_cgm')
+
+    dfs = []
+    for p in Path(data_path).iterdir():
+        if str(p).endswith('.csv'):
+            df = pd.read_csv(p)
+            
+            date_nans = df['Timestamp (YYYY-MM-DDThh:mm:ss)'].isna()
+            n_date_nans = sum(date_nans)
+            if n_date_nans > 9:
+                raise Exception(f'More NaN Timestamp values than expected. '
+                                f'Expected <= 9, found {n_date_nans}')
+
+            df = df.loc[~date_nans]
+            dfs.append(df)
+
+    return pd.concat(dfs)
