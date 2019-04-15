@@ -107,8 +107,84 @@ def load_so_pump_clean():
 
     cols = ['Datetime', 'Type', 'Value', 'Unit', 'Description', 
             'Other Info', 'Comment']
+    df = df[cols]
 
-    return df[cols]
+    # drop daily summaries and pump alarms
+    df = df.loc[~df['Type'].isin(['Insulin Summary', 'Pump Alarm'])]
+
+    # fix NaN values for bolus
+    mask = (df['Value'].isna() & 
+            df['Description'].str.lower().str.contains('bolus') == True)
+    df.loc[mask, 'Type'] = 'Bolus Insulin'
+    df.loc[mask, 'Value'] = (df.loc[mask, 'Description'].str
+                               .extract(r'([0-9].[0-9][0-9])')[0])
+    
+    # fix NaN values for basal
+    mask = (df['Value'].isna() &
+            ((df['Description'].str.lower()
+                               .str.contains('basal rate set to')) == True))
+    df.loc[mask, 'Type'] = 'Basal Insulin'
+    df.loc[mask, 'Value'] = (df.loc[mask, 'Description'].str
+                               .extract(r'([0-9].[0-9][0-9])')[0])
+    
+    df.loc[:, 'Value'] = pd.to_numeric(df['Value'])
+    
+    # assign bolus to 1 minute duration
+    df.loc[df['Type'] == 'Bolus Insulin', 'dur_mins'] = 1
+    
+    # create type: extended bolus insulin
+    mask = df['Description'].str.contains('Extended General Bolus') == True
+    df.loc[mask, 'Type'] = 'Extended Bolus Insulin'
+    df.loc[mask, 'dur_mins'] = (df.loc[mask, 'Description']
+                                  .str.extract(r'([0-9]+ minutes)')[0]
+                                  .str.strip(' minutes').astype(int))
+    
+    # remove unused rows and cols
+    keep_types = ['Bolus Insulin', 'Basal Insulin', 'Extended Bolus Insulin']
+    df = df.loc[df['Type'].isin(keep_types)]
+    cols = ['Datetime', 'Type', 'Value', 'dur_mins']
+    df = df[cols].sort_values('Datetime')
+    
+    # convert basal rates to total insulin administered over a total duration
+    # (just like Extended Bolus Insulin)
+    mask = (df['Type'] == 'Basal Insulin')
+    df.loc[mask, 'until'] = df.loc[mask, 'Datetime'].shift(-1)
+    # set most recent basal end time to most recent data in entire DataFrame
+    df.loc[mask, 'until'] = df.loc[mask, 'until'].fillna(df['Datetime'].max())
+
+    df.loc[mask, 'dur_mins'] = (df.loc[mask, 'until']
+                                  .subtract(df.loc[mask, 'Datetime'])
+                                  .dt.seconds.divide(60))
+    df.loc[mask, 'Value'] = (df.loc[mask, 'Value']
+                               .divide(60)
+                               .multiply(df.loc[mask, 'dur_mins']))
+    df = df.drop(columns=['until'])
+    df = df.loc[df['dur_mins'] > 0]
+
+    df = expand_rows_to_minute_interval(df.copy(), 
+                                        row_type='Extended Bolus Insulin')
+    df = expand_rows_to_minute_interval(df.copy(), 
+                                        row_type='Basal Insulin')
+
+    return df.sort_values('Datetime')
+
+
+def expand_rows_to_minute_interval(df, row_type):
+    expand_dfs = []
+    for idx, row in df.loc[df['Type']==row_type].iterrows():
+        expand_df = pd.DataFrame([row] * int(row['dur_mins']))
+        expand_df['Datetime'] = pd.date_range(start=row['Datetime'], 
+                                              periods=int(row['dur_mins']), 
+                                              freq='min')
+        expand_df['Value'] = row['Value'] / row['dur_mins']
+        expand_df['dur_mins'] = 1
+        expand_dfs.append(expand_df)
+    
+    # replace original rows with expanded versions
+    df = df.loc[df['Type'] != row_type]
+    df = df.append(expand_dfs, ignore_index=True)
+    
+    return df
 
 
 def load_so_cgm():
