@@ -107,3 +107,4 @@ venv.bak/
 *.ibf
 data/private/*
 heroku/data/private/*
+.vscode/*
