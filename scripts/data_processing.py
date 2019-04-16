@@ -224,4 +224,4 @@ def load_so_cgm(raw=False):
     }
     df = df.rename(columns=rename_dict)
 
-    return df[rename_dict.values()]
+    return df[list(rename_dict.values()) + ['below_threshold']]
