@@ -106,5 +106,4 @@ venv.bak/
 # this repo
 *.ibf
 data/private/*
-heroku/data/private/*
 .vscode/*
