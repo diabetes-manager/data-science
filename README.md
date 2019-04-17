@@ -1,2 +1,4 @@
 # data-science
 data science repo
+
+![Flask App Build Badge](https://codebuild.us-east-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiVE02NmNMVHAyb0c4U2UrNTBIM1NLTmloLytMTkFFZlF3bG5iZkxNcWI1a2NvOEpMbHdtcWtwbStINVZNQkhaQzBITlNzbWVSK2VsYS9VK245S0VLQVZFPSIsIml2UGFyYW1ldGVyU3BlYyI6ImhzcisvN0k2ZVJ0a2VKVGciLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master)
