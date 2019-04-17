@@ -106,5 +106,5 @@ venv.bak/
 # this repo
 *.ibf
 data/private/*
-heroku/data/private/*
+diabetesmanager/data/private/*
 .vscode/*
