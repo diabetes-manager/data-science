@@ -14,7 +14,13 @@ def create_app():
         table = pickle.load(f)
 
     def select_table_values(start_idx, length):
-        df = table.iloc[start_idx:start_idx + length, :]
+        len_to_return = length
+        if start_idx > table.shape[0]:
+            return 'Start index too large'
+        elif start_idx + length > table.shape[0]:
+            len_to_return = table.shape[0] - start_idx
+
+        df = table.iloc[start_idx:start_idx + len_to_return, :]
         return df
 
     @app.route('/')
