@@ -1,12 +1,16 @@
 # data-science
 data science repo
 
-
 ## Development Build
 
-Run python package manager on requirements.txt to download relevant packages 
+Make sure you're on Python3, use a venv
 
-`pip install -r requirements.txt`
+if in a venv use guide
+https://packaging.python.org/guides/installing-using-pip-and-virtualenv/
+
+Run python package manager on requirements.txt to download relevant packages
+
+`pip3 install -r requirements.txt`
 
 set environemt variables for Flask
 
