@@ -206,7 +206,11 @@ def load_so_cgm(raw=False):
 
             dfs.append(df)
 
-    df = pd.concat(dfs).sort_values('Timestamp (YYYY-MM-DDThh:mm:ss)')
+    df = pd.concat(dfs)
+    df['Timestamp (YYYY-MM-DDThh:mm:ss)'] = pd.to_datetime(
+        df['Timestamp (YYYY-MM-DDThh:mm:ss)']
+    )
+    df = df.sort_values('Timestamp (YYYY-MM-DDThh:mm:ss)')
 
     if raw:
         return df
