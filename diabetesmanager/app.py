@@ -10,7 +10,7 @@ def create_app():
     app = Flask(__name__)
     app.config['JSON_ADD_STATUS'] = False
 
-    with open('diabetesmanager/data/private/table', 'rb') as f:
+    with open('data/private/table', 'rb') as f:
         table = pickle.load(f)
 
     def select_table_values(start_idx, length):
