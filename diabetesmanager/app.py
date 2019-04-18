@@ -46,6 +46,7 @@ def create_app():
 
     @app.route('/')
     def root():
+        print('Handle GET request to /')
         return jsonify(message='Nothing here')
 
     @app.route('/predict', methods=['GET'])
