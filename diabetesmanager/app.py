@@ -55,15 +55,13 @@ def create_app():
         # TODO: query for filtered user_id data here
         df = load_so_cgm()
 
-        predictions = make_prediction(df, model)
+        df = make_prediction(df, model)
 
         # TODO: rather than return JSON, we could save predictions to DB
-        predictions = predictions.to_json(orient='records')
-
         response = jsonify(
             message="success",
-            user_id=user_id,
-            predictions=predictions,
+            user_id=int(user_id),
+            records=df.to_dict('records'),
         )
 
         return response
