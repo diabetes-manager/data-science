@@ -1,5 +1,6 @@
 """Main application and logic for Diabetes Monitor"""
 import pickle
+from os import environ
 from pathlib import Path
 
 import psycopg2
@@ -51,8 +52,20 @@ def create_app():
         with open(MODEL_PATH, 'rb') as f:
             model = pickle.load(f)
 
-        # TODO: query for filtered user_id data here
-        df = load_so_cgm()
+        if environ['FLASK_ENV'] == 'production':
+            # TODO: query for filtered user_id data here 
+            cur = DB.cursor()
+            cur.execute(f"""
+                SELECT (timestamp, value, below_threshold)
+                FROM bloodsugar
+                WHERE user_id = {user_id}
+            """)
+            df = pd.DataFrame(
+                cur.fetchall(), 
+                columns=['timestamp', 'value', 'below_threshold']
+            )
+        else:
+            df = load_so_cgm()
 
         # TODO: determine interval by user (average rolling time diff)
         try:

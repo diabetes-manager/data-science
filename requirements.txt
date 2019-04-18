@@ -2,7 +2,7 @@ pandas
 numpy
 gunicorn
 python-dotenv
-flask
+flask==1.0.2
 xgboost
 psycopg2
 sklearn
