@@ -4,10 +4,15 @@ from pathlib import Path
 
 from flask import Flask, request
 from flask_json import json_response
+import psycopg2
 
 from .config import Config
+from .models import DB
+from .predict import make_prediction
+from .dummy_data import load_so_cgm
 
 DATA_DIR = Path(__file__).parents[1] / 'data'
+MODEL_PATH = Path(__file__).parent / 'model.pkl'
 
 
 def select_table_values(table, start_idx, length):
@@ -26,23 +31,32 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    @app.shell_context_processor
+    def make_shell_context():
+        return {'DB': DB}
+
     @app.route('/')
     def root():
         return json_response(data='Nothing here')
 
     @app.route('/data', methods=['GET'])
     def data():
+        user_id = request.args.get('userid')
         start_idx = request.args.get('start')
         length = request.args.get('length')
 
-        # TODO: write model to and read model from production database
-        with open(DATA_DIR / 'private' / 'table', 'rb') as f:
-            table = pickle.load(f)
+        # load model
+        with open(MODEL_PATH, 'rb') as f:
+            model = pickle.load(f)
 
-        selected_table = select_table_values(
-            table, int(start_idx), int(length)
-        ).to_json(orient='records')
+        # TODO: query for user data here
+        df = load_so_cgm()
 
-        return json_response(data=selected_table)
+        predictions = make_prediction(df, model)
+
+        # TODO: return predictions
+        predictions = predictions.to_json(orient='records')
+
+        return json_response(data=predictions)
 
     return app

@@ -5,3 +5,5 @@ python-dotenv
 flask
 Flask-JSON
 xgboost
+psycopg2
+sklearn
