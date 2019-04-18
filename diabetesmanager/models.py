@@ -1,5 +1,6 @@
 """Connect to AWS RDS instance"""
 from os import environ
+from .config import Config
 
 import psycopg2
 
