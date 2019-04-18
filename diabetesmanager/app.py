@@ -54,8 +54,7 @@ def create_app():
 
         if not user_id:
             return jsonify(
-                message="Error: must pass user_id, e.g. /predict?user_id=1"
-            )
+                message="Error: must pass user_id, e.g. /predict?user_id=1")
 
         # load user data
         if environ['FLASK_ENV'] == 'production':
@@ -67,9 +66,8 @@ def create_app():
                 LIMIT 3
             """)
             df = pd.DataFrame(
-                cur.fetchall(), 
-                columns=['timestamp', 'value', 'below_threshold']
-            )
+                cur.fetchall(),
+                columns=['timestamp', 'value', 'below_threshold'])
         else:
             df = load_so_cgm()
             df = df.iloc[-10:]
@@ -78,9 +76,7 @@ def create_app():
             predictions = []
             for i, model in enumerate(MODELS):
                 minutes = (i + 1) * 5
-                predictions.append(
-                    make_prediction(df.copy(), model, minutes)
-                )
+                predictions.append(make_prediction(df.copy(), model, minutes))
             df = pd.concat(predictions)
         except Exception as e:
             if environ['FLASK_ENV'] == 'production':
@@ -100,8 +96,7 @@ def create_app():
 
         if not user_id:
             return jsonify(
-                message="Must pass user_id, e.g. /predict?user_id=1"
-            )
+                message="Must pass user_id, e.g. /predict?user_id=1")
 
         return jsonify(message="success")
 
