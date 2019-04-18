@@ -48,23 +48,23 @@ def create_app():
                 message="Error: must pass user_id, e.g. /predict?user_id=1"
             )
 
-        # load model
         with open(MODEL_PATH, 'rb') as f:
             model = pickle.load(f)
 
         # TODO: query for filtered user_id data here
         df = load_so_cgm()
 
-        df = make_prediction(df, model)
-
-        # TODO: rather than return JSON, we could save predictions to DB
-        response = jsonify(
-            message="success",
-            user_id=int(user_id),
-            records=df.to_dict('records'),
-        )
-
-        return response
+        # TODO: determine interval by user (average rolling time diff)
+        try:
+            df = make_prediction(df, model)
+        except Exception as e:
+            return jsonify(message=f"Error: {e}")
+        else:
+            return jsonify(
+                message="success",
+                user_id=int(user_id),
+                records=df.to_dict('records'),
+            )
 
     @app.route('/build', methods=['GET'])
     def build():
