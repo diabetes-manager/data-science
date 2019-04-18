@@ -7,6 +7,8 @@ from .config import Config
 
 import psycopg2
 
+print('environ:', environ)
+
 if environ['FLASK_ENV'] == 'production':
     DB = psycopg2.connect(
         dbname=environ["DB_NAME"],
