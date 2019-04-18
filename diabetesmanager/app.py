@@ -45,7 +45,7 @@ def create_app():
 
         if not user_id:
             return jsonify(
-                message="Must pass user_id, e.g. /predict?user_id=1"
+                message="Error: must pass user_id, e.g. /predict?user_id=1"
             )
 
         # load model
@@ -65,5 +65,16 @@ def create_app():
         )
 
         return response
+
+    @app.route('/build', methods=['GET'])
+    def build():
+        user_id = request.args.get('user_id')
+
+        if not user_id:
+            return jsonify(
+                message="Must pass user_id, e.g. /predict?user_id=1"
+            )
+
+        return jsonify(message="success")
 
     return app

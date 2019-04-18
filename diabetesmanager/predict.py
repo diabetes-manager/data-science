@@ -9,16 +9,25 @@ MODEL_PATH = Path(__file__).parent / 'model.pkl'
 
 
 def preprocess(df, minutes=30, n_historical_cols=2):
+    # TODO: type checking
+    # timestamp should be datetime
+    # measure should be int
+
     # convert datetime to int
     df['timestamp'] = df['timestamp'].astype(np.int64) // 10**9
 
     for x in range(1, n_historical_cols+1):
         df[['prev_meas', 'prev_time']] = df[['measurement', 'timestamp']].shift(x)
         df[f'prev_trend_{x}'] = (
-            df['prev_meas'].divide(df['timestamp'] - df['prev_time']))
+            df['prev_meas'].divide(df['timestamp'] - df['prev_time'])
+        )
         df = df.drop(columns=['prev_meas', 'prev_time'])
 
     df = append_future_value_col(df, minutes)
+
+    # TODO: Other features?
+    # * hour of day
+    # * day of week
 
     # remove nans
     og_len = len(df)
@@ -47,6 +56,11 @@ def append_future_value_col(df, minutes):
 def make_prediction(user_df, model, minutes=30):
     df = preprocess(user_df, minutes)
     df = df.drop(columns=[f'{minutes}_minutes'])
+
+    # TODO: add rows for future timestamps
+    # max_time = df['timestamp'].max()
+    # future_times = range(max_time, max_time + minutes * 60, 5 * 60)
+    # df = df.append() ...
     predictions = model.predict(df)
     
     df = df[['timestamp']].assign(predicted_value = list(predictions))
