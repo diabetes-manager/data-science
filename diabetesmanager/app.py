@@ -46,8 +46,7 @@ def create_app():
 
     @app.route('/')
     def root():
-        return "This is a test"
-        # return jsonify(message='Nothing here')
+        return jsonify(message='Nothing here')
 
     @app.route('/predict', methods=['GET'])
     def predict():
