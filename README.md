@@ -28,3 +28,8 @@ Run the server in development
 ```
 flask run
 ```
+
+Docker
+```
+docker build -t diabetesmanager:latest .
+```
