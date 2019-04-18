@@ -2,12 +2,16 @@
 import pickle
 from pathlib import Path
 
-from flask import Flask, request
-from flask_json import json_response
+import psycopg2
+from flask import Flask, jsonify, request
 
 from .config import Config
+from .dummy_data import load_so_cgm
+from .models import DB
+from .predict import make_prediction
 
 DATA_DIR = Path(__file__).parents[1] / 'data'
+MODEL_PATH = Path(__file__).parent / 'model.pkl'
 
 
 def select_table_values(table, start_idx, length):
@@ -18,6 +22,7 @@ def select_table_values(table, start_idx, length):
         len_to_return = table.shape[0] - start_idx
 
     df = table.iloc[start_idx:start_idx + len_to_return, :]
+
     return df
 
 
@@ -26,23 +31,50 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    @app.shell_context_processor
+    def make_shell_context():
+        return {'DB': DB}
+
     @app.route('/')
     def root():
-        return json_response(data='Nothing here')
+        return jsonify(message='Nothing here')
 
-    @app.route('/data', methods=['GET'])
-    def data():
-        start_idx = request.args.get('start')
-        length = request.args.get('length')
+    @app.route('/predict', methods=['GET'])
+    def predict():
+        user_id = request.args.get('user_id')
 
-        # TODO: write model to and read model from production database
-        with open(DATA_DIR / 'private' / 'table', 'rb') as f:
-            table = pickle.load(f)
+        if not user_id:
+            return jsonify(
+                message="Error: must pass user_id, e.g. /predict?user_id=1"
+            )
 
-        selected_table = select_table_values(
-            table, int(start_idx), int(length)
-        ).to_json(orient='records')
+        # load model
+        with open(MODEL_PATH, 'rb') as f:
+            model = pickle.load(f)
 
-        return json_response(data=selected_table)
+        # TODO: query for filtered user_id data here
+        df = load_so_cgm()
+
+        df = make_prediction(df, model)
+
+        # TODO: rather than return JSON, we could save predictions to DB
+        response = jsonify(
+            message="success",
+            user_id=int(user_id),
+            records=df.to_dict('records'),
+        )
+
+        return response
+
+    @app.route('/build', methods=['GET'])
+    def build():
+        user_id = request.args.get('user_id')
+
+        if not user_id:
+            return jsonify(
+                message="Must pass user_id, e.g. /predict?user_id=1"
+            )
+
+        return jsonify(message="success")
 
     return app

@@ -20,6 +20,7 @@ def get_db_conn():
         password=url.password,
         host=url.hostname,
         port=url.port
+        sslmode='verify-full'
     )
 
     return conn
