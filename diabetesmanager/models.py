@@ -3,7 +3,7 @@ from os import environ
 
 from dotenv import load_dotenv
 load_dotenv()
-from .config import Config
+# from .config import Config
 
 import psycopg2
 
