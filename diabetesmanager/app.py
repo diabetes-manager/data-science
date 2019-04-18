@@ -1,6 +1,7 @@
 """Main application and logic for Diabetes Monitor"""
 import pickle
 from os import environ
+import pandas as pd
 from pathlib import Path
 
 import psycopg2
@@ -12,7 +13,14 @@ from .models import DB
 from .predict import make_prediction
 
 DATA_DIR = Path(__file__).parents[1] / 'data'
-MODEL_PATH = Path(__file__).parent / 'model.pkl'
+MODEL_DIR = Path(__file__).parent / 'ml_models'
+
+# load models
+MODELS = []
+for model_path in MODEL_DIR.iterdir():
+    if str(model_path).endswith('.pkl'):
+        with open(model_path, 'rb') as f:
+            MODELS.append(pickle.load(f))
 
 
 def select_table_values(table, start_idx, length):
@@ -49,16 +57,14 @@ def create_app():
                 message="Error: must pass user_id, e.g. /predict?user_id=1"
             )
 
-        with open(MODEL_PATH, 'rb') as f:
-            model = pickle.load(f)
-
+        # load user data
         if environ['FLASK_ENV'] == 'production':
-            # TODO: query for filtered user_id data here 
             cur = DB.cursor()
             cur.execute(f"""
                 SELECT (timestamp, value, below_threshold)
                 FROM bloodsugar
                 WHERE user_id = {user_id}
+                LIMIT 3
             """)
             df = pd.DataFrame(
                 cur.fetchall(), 
@@ -66,12 +72,21 @@ def create_app():
             )
         else:
             df = load_so_cgm()
+            df = df.iloc[-10:]
 
-        # TODO: determine interval by user (average rolling time diff)
         try:
-            df = make_prediction(df, model)
+            predictions = []
+            for i, model in enumerate(MODELS):
+                minutes = (i + 1) * 5
+                predictions.append(
+                    make_prediction(df.copy(), model, minutes)
+                )
+            df = pd.concat(predictions)
         except Exception as e:
-            return jsonify(message=f"Error: {e}")
+            if environ['FLASK_ENV'] == 'production':
+                return jsonify(message=f"Error: {e}")
+            else:
+                raise
         else:
             return jsonify(
                 message="success",

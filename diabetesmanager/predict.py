@@ -2,10 +2,8 @@ import pickle
 from pathlib import Path
 
 import numpy as np
-# import pandas as pd
+import pandas as pd
 import sklearn
-
-MODEL_PATH = Path(__file__).parent / 'model.pkl'
 
 
 def preprocess(df, minutes=30, n_historical_cols=2):
@@ -40,14 +38,10 @@ def preprocess(df, minutes=30, n_historical_cols=2):
 
 def make_prediction(user_df, model, minutes=30):
     df = preprocess(user_df, minutes)
-
-    # TODO: add rows to predict future timestamps
-    # max_time = df['timestamp'].max()
-    # future_times = range(max_time, max_time + minutes * 60, 5 * 60)
-    # df = df.append() ...
+    df = df.iloc[-1:]
     predictions = model.predict(df)
-    
-    df = df[['timestamp']].assign(predicted_value = list(predictions))
-    df['timestamp'] = df['timestamp'] + 60 * minutes
 
-    return df
+    return pd.DataFrame({
+        'timestamp': [df['timestamp'].max() + 60 * minutes],
+        'predicted_value': [int(predictions[0].round())]
+    })
