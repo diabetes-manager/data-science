@@ -14,13 +14,10 @@ def preprocess(df, minutes=30, n_historical_cols=2):
     # convert datetime to into - shouldn't be necessary in production
     df['timestamp'] = df['timestamp'].astype(np.int64) // 10**9
 
-    for x in range(1, n_historical_cols+1):
-        df[['prev_meas', 'prev_time']] = (
-            df[['measurement', 'timestamp']].shift(x)
-        )
+    for x in range(1, n_historical_cols + 1):
+        df[['prev_meas', 'prev_time']] = (df[['value', 'timestamp']].shift(x))
         df[f'prev_trend_{x}'] = (
-            df['prev_meas'].divide(df['timestamp'] - df['prev_time'])
-        )
+            df['prev_meas'].divide(df['timestamp'] - df['prev_time']))
         df = df.drop(columns=['prev_meas', 'prev_time'])
 
     # TODO: Other features?
