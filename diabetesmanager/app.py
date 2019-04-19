@@ -1,6 +1,6 @@
 """Main application and logic for Diabetes Monitor"""
 import pickle
-from os import environ
+import os
 import pandas as pd
 from pathlib import Path
 
@@ -57,7 +57,7 @@ def create_app():
                 message="Error: must pass user_id, e.g. /predict?user_id=1")
 
         # load user data
-        if environ['FLASK_ENV'] == 'production':
+        if os.getenv('FLASK_ENV') != 'development':
             cur = DB.cursor()
             cur.execute(f"""
                 SELECT (timestamp, value, below_threshold)
@@ -67,10 +67,11 @@ def create_app():
             """)
             df = pd.DataFrame(
                 cur.fetchall(),
-                columns=['timestamp', 'value', 'below_threshold'])
+                columns=['timestamp', 'value', 'below_threshold']
+            )
         else:
             df = load_so_cgm()
-            df = df.iloc[-10:]
+            df = df.iloc[-3:]
 
         try:
             predictions = []
@@ -79,10 +80,11 @@ def create_app():
                 predictions.append(make_prediction(df.copy(), model, minutes))
             df = pd.concat(predictions)
         except Exception as e:
-            if environ['FLASK_ENV'] == 'production':
-                return jsonify(message=f"Error: {e}")
-            else:
+            if os.getenv('FLASK_DEBUG') == True:
                 raise
+            else:
+                return jsonify(message=f"Error: {e}")
+                
         else:
             return jsonify(
                 message="success",

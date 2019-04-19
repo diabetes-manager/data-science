@@ -1,9 +1,9 @@
 """Connect to AWS RDS instance"""
-from os import environ
+from os import getenv
 
 import psycopg2
 
-if environ['FLASK_ENV'] == 'production':
+if getenv('FLASK_ENV') == 'production':
     DB = psycopg2.connect(
         dbname=environ["DB_NAME"],
         user=environ["DB_USER"],
