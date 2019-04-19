@@ -1,10 +1,11 @@
 from pathlib import Path
 import pandas as pd
+import numpy as np
 
 DATA_DIR = Path(__file__).parents[1] / 'data'
 
 
-def load_so_cgm(raw=False):
+def load_so_cgm():
     data_path = str(DATA_DIR / 'private' / 'dexcom_cgm')
 
     dfs = []
@@ -24,11 +25,8 @@ def load_so_cgm(raw=False):
     df = pd.concat(dfs)
     df['Timestamp (YYYY-MM-DDThh:mm:ss)'] = pd.to_datetime(
         df['Timestamp (YYYY-MM-DDThh:mm:ss)']
-    )
+    ).astype(np.int64) // 10**9
     df = df.sort_values('Timestamp (YYYY-MM-DDThh:mm:ss)')
-
-    if raw:
-        return df
 
     df = df[df['Event Type'] == 'EGV']
     df['below_threshold'] = False
@@ -39,8 +37,12 @@ def load_so_cgm(raw=False):
 
     rename_dict = {
         'Timestamp (YYYY-MM-DDThh:mm:ss)': 'timestamp',
-        'Glucose Value (mg/dL)': 'measurement',
+        'Glucose Value (mg/dL)': 'value',
     }
+
     df = df.rename(columns=rename_dict)
+
+    df = df.groupby('timestamp').mean().reset_index()
+    df['below_threshold'] = df['below_threshold'].round().astype(int)
 
     return df[list(rename_dict.values()) + ['below_threshold']]
